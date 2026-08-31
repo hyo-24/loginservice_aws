@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>테스트 페이지</title>
+</head>
+<body>
+<h1>로그인 성공! 🎉</h1>
+<div id="userInfo">데이터를 불러오는 중입니다...</div>
+
+<script>
+    async function loadSecretData() {
+        // 1. 로컬 스토리지에서 토큰 꺼내기
+        const token = localStorage.getItem('accessToken');
+
+        if (!token) {
+            alert("로그인이 필요합니다!");
+            location.href = "/index.html";
+            return;
+        }
+
+        // 2. 인터셉터가 기다리고 있는 헤더에 토큰 담아서 요청하기
+        try {
+            const response = await fetch('/members/info', { // 인증이 필요한 API 주소
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token // 효주 씨 인터셉터가 검사할 부분!
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('userInfo').innerText =
+                    `환영합니다, ${data.name}님! 당신의 아이디는 ${data.loginId}입니다.`;
+            } else {
+                alert("인증에 실패했습니다. 다시 로그인해 주세요.");
+                location.href = "/index.html";
+            }
+        } catch (error) {
+            console.error("에러 발생:", error);
+        }
+    }
+
+    loadSecretData();
+</script>
+</body>
+</html>

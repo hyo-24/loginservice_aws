@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: member-service
+  datasource:
+    url: jdbc:mysql://database-docker.c6lgkimcmm92.us-east-1.rds.amazonaws.com:3306/logindockerdb
+    username: admin
+    password: ${DB_PASSWORD}
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+
+server:
+  port: 8081
+
+# auth-service와 반드시 동일한 값을 사용해야 발급된 토큰을 검증할 수 있음
+jwt:
+  secret: ${JWT_SECRET:local-dev-secret-key-change-me-please-32bytes}
+  expiration: 1800000
+
+ 

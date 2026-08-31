@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: auth-service
+
+server:
+  port: 8080
+
+# member-service와 반드시 동일한 값을 사용해야 발급된 토큰을 검증할 수 있음
+jwt:
+  secret: ${JWT_SECRET:local-dev-secret-key-change-me-please-32bytes}
+  expiration: 1800000
+
+member-service:
+  base-url: ${MEMBER_SERVICE_URL:http://3.214.246.197:8081}

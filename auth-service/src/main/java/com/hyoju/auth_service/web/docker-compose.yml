@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      # AWS RDS 등 환경변수 설정
+      - DB_URL=jdbc:mysql://your-rds-endpoint.amazonaws.com:3306/auth_db
+    networks:
+      - app-network
+    restart: always
+
+  member-service:
+    build:
+      context: ./member-service
+      dockerfile: Dockerfile
+    container_name: member-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_URL=jdbc:mysql://your-rds-endpoint.amazonaws.com:3306/member_db
+      - AUTH_SERVICE_URL=http://auth-service:8081 # 서비스간 내부 통신시 컨테이너명 활용
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge

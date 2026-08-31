@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--===============================================================================================-->
+    <link rel="icon" type="image/png" href="images/icons/favicon.ico"/>
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/animate/animate.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/css-hamburgers/hamburgers.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="vendor/select2/select2.min.css">
+    <!--===============================================================================================-->
+    <link rel="stylesheet" type="text/css" href="css/util.css">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+    <!--===============================================================================================-->
+</head>
+<body>
+
+<div class="limiter">
+    <div class="container-login100">
+        <div class="wrap-login100">
+            <div class="login100-pic js-tilt" data-tilt>
+                <img src="images/img-01.png" alt="IMG">
+            </div>
+
+            <form class="login100-form validate-form" onsubmit="return false;">
+					<span class="login100-form-title">
+						Member Login
+					</span>
+
+                <div class="wrap-input100 validate-input" data-validate = "Valid email is required: ex@abc.xyz">
+                    <input class="input100" type="text" name="email" id="loginId" placeholder="Username">
+                    <span class="focus-input100"></span>
+                    <span class="symbol-input100">
+							<i class="fa fa-user" aria-hidden="true"></i>
+						</span>
+                </div>
+
+                <div class="wrap-input100 validate-input" data-validate = "Password is required">
+                    <input class="input100" type="password" name="pass" id="password" placeholder="Password">
+                    <span class="focus-input100"></span>
+                    <span class="symbol-input100">
+							<i class="fa fa-lock" aria-hidden="true"></i>
+						</span>
+                </div>
+
+                <div class="container-login100-form-btn">
+                    <button type="button" class="login100-form-btn" onclick="handleLogin()">
+                        Login
+                    </button>
+                </div>
+
+                <div class="text-center p-t-12">
+						<span class="txt1">
+							Forgot
+						</span>
+                    <a class="txt2" href="#">
+                        Username / Password?
+                    </a>
+                </div>
+
+                <div class="text-center p-t-136">
+                    <a class="txt2" href="/join.html">
+                        Create your Account
+                        <i class="fa fa-long-arrow-right m-l-5" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!--===============================================================================================-->
+<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+<script src="vendor/bootstrap/js/popper.js"></script>
+<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+<script src="vendor/select2/select2.min.js"></script>
+<!--===============================================================================================-->
+<script src="vendor/tilt/tilt.jquery.min.js"></script>
+<script >
+    $('.js-tilt').tilt({
+        scale: 1.1
+    })
+</script>
+<!--===============================================================================================-->
+<script src="js/main.js"></script>
+<script>
+    async function handleLogin() {
+    console.log("로그인 함수 시작!");
+    const loginId = document.getElementById('loginId').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        // 1. Auth 서비스 EC2 IP 입력 (포트 8080)
+        const response = await fetch('http://3.214.117.76:8080/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ loginId, password })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log("서버 응답 데이터:", data);
+
+            // 2. Auth 서비스 LoginResponse DTO 필드명 확인 (token 또는 accessToken)
+            const token = data.token || data.accessToken;
+
+            if (token) {
+                localStorage.setItem('accessToken', token);
+                alert("로그인 성공! 🎉");
+                location.href = '/test.html';
+            } else {
+                alert("서버 응답에 토큰이 없습니다. LoginResponse DTO를 확인해주세요.");
+            }
+        } else {
+            alert("로그인 실패! ❌ 아이디/비밀번호를 확인하세요. (상태 코드: " + response.status + ")");
+        }
+    } catch (error) {
+        console.error("통신 에러:", error);
+        alert("Auth 서비스 연결 실패! IP 및 8080 포트 보안그룹을 확인하세요.");
+    }
+}
+</script>
+</body>
+</html>
