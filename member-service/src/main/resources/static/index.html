@@ -104,7 +104,7 @@
 
     try {
         // 1. Auth 서비스 EC2 IP 입력 (포트 8080)
-        const response = await fetch('http://3.214.117.76:8080/auth/login', {
+        const response = await fetch('http://3.214.246.197:8080/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ loginId, password })
