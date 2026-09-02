@@ -103,7 +103,8 @@
     const password = document.getElementById('password').value;
 
     try {
-        // 1. Auth 서비스 EC2 IP 입력 (포트 8080)
+        // 1. Member 서비스 EC2 IP 입력 (포트 8081)
+        // EC2 하나로 MSA 하기위해서 입력되는 포트 번호를 member 서비스 꺼로 바꿈
         const response = await fetch('http://3.214.246.197:8080/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
