@@ -42,14 +42,14 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            DB_PASSWORD=$(aws secretsmanager get-secret-value \
+            --secret-id login-service/db-password \
+            --query 'SecretString' \
+            --output text | jq -r '.DB_PASSWORD')
+
             docker pull leehyoju24/login-service:latest
             docker pull leehyoju24/member-service:latest
             docker stop auth-service member-service || true
             docker rm auth-service member-service || true
-            docker run -d --name auth-service -p 8080:8080 \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              leehyoju24/login-service:latest
-
-            docker run -d --name member-service -p 8081:8081 \
-              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              leehyoju24/member-service:latest
+            docker run -d --name auth-service -p 8080:8080 -e DB_PASSWORD=$DB_PASSWORD leehyoju24/login-service:latest
+            docker run -d --name member-service -p 8081:8081 -e DB_PASSWORD=$DB_PASSWORD leehyoju24/member-service:latest
