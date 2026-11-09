@@ -38,6 +38,9 @@ public class LoginCheckInterceptor implements HandlerInterceptor { // 인가 필
         request.setAttribute("memberId", memberId);
 
         // 인가 - role 확인 ‼️
+        // (학습 목적: 인가가 동작하는 것을 확인하기 위해 ROLE_ADMIN으로 고정했다.
+        //  실제 서비스라면 경로별로 요구 권한을 다르게 두어야 하고,
+        //  이 인터셉터는 /** 전체에 걸려 있으므로 보호 경로가 늘어나면 모두 관리자 전용이 된다.)
         String role = jwtValidator.getRole(token);
         if (!role.equals("ROLE_ADMIN")) {
             log.info("인가 실패 - role: {}", role);
