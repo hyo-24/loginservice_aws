@@ -57,7 +57,7 @@ Spring Security 없이 JWT + Interceptor로 인증/인가를 직접 구현하고
 ```
 
 인프라는 Terraform으로 코드화해, VPC부터 클러스터·노드그룹·RDS·IAM까지 **22개 리소스를 한 번에 생성하고 한 번에 삭제**합니다.
-인프라 코드와 배포 기록은 별도 저장소로 관리합니다. *(eks-infra 저장소 — 링크 추가 예정)*
+인프라 코드와 배포 기록은 별도 저장소로 관리합니다. [hyo-24/eks-infra](https://github.com/hyo-24/eks-infra)
 
 **서비스 간 흐름**
 1. 클라이언트가 auth-service로 로그인 요청
