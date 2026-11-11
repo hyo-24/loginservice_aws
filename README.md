@@ -87,6 +87,7 @@ Spring Security 없이 JWT + Interceptor로 인증/인가를 직접 구현하고
 | Container | Docker, Kubernetes (AWS EKS) |
 | CI/CD | GitHub Actions |
 | IaC | Terraform (S3 원격 state) |
+| 모니터링 | Prometheus, Grafana *(로컬 환경)* |
 
 ## 주요 기능 및 구현 포인트
 
@@ -158,7 +159,8 @@ docker run -d -p 8081:8081 -e DB_PASSWORD=<비밀번호> member-service
 
 **남은 것**
 
-- [ ] CloudWatch 또는 Prometheus + Grafana를 통한 모니터링 구축
+- [ ] 운영 환경(EKS)에 모니터링 연동 및 알림 설정
+      *(로컬에서는 Prometheus + Grafana로 지표 수집·대시보드 구성 완료 — `monitoring/` 참고)*
 - [ ] readiness / liveness probe 추가
 - [ ] External Secrets Operator 도입 — 현재 DB 비밀번호가 Terraform 변수·Secrets Manager·쿠버네티스 Secret 세 곳에 사본으로 존재하므로, Secrets Manager를 단일 원본으로 통합
 - [ ] 사설 서브넷 분리 — 현재는 NAT 게이트웨이 비용 때문에 퍼블릭 서브넷만 사용하고, RDS는 `publicly_accessible = false` + 보안 그룹으로 차단
