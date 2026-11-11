@@ -21,6 +21,8 @@ services:
 
   member-service:
     image: leehyoju24/member-service:latest
+    # 이미지가 amd64 로만 빌드돼 있어 ARM 맥에서는 플랫폼을 명시해 에뮬레이션으로 실행한다
+    platform: linux/amd64
     depends_on:
       mysql:
         condition: service_healthy
@@ -33,6 +35,7 @@ services:
 
   auth-service:
     image: leehyoju24/login-service:latest
+    platform: linux/amd64
     depends_on:
       - member-service
     environment:
