@@ -1,0 +1,59 @@
+# 로컬 모니터링 실습 환경
+#   MySQL + 두 서비스 + Prometheus + Grafana 를 한 번에 띄운다.
+#   AWS 비용 없이 지표 수집과 대시보드 구성을 확인하기 위한 구성.
+#
+#   실행:  docker compose pull && docker compose up -d
+#   종료:  docker compose down -v
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: localtest1234
+      MYSQL_DATABASE: logindockerdb
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: localtest1234
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-plocaltest1234"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  member-service:
+    image: leehyoju24/member-service:latest
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/logindockerdb
+      DB_PASSWORD: localtest1234
+      JWT_SECRET: local-dev-secret-key-change-me-please-32bytes
+    ports:
+      - "8081:8081"
+
+  auth-service:
+    image: leehyoju24/login-service:latest
+    depends_on:
+      - member-service
+    environment:
+      MEMBER_SERVICE_URL: http://member-service:8081
+      JWT_SECRET: local-dev-secret-key-change-me-please-32bytes
+    ports:
+      - "8080:8080"
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"

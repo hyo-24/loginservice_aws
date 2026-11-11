@@ -1,0 +1,14 @@
+# Prometheus 가 어떤 서비스의 지표를 몇 초마다 가져올지 적어둔 파일
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'auth-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['auth-service:8080']
+
+  - job_name: 'member-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['member-service:8081']

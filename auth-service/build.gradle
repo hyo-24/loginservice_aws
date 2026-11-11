@@ -22,6 +22,7 @@ dependencies {
 	// Web (RestTemplate으로 member-service 호출)
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok'

@@ -20,3 +20,12 @@ jwt:
   expiration: 1800000
 
  
+# 모니터링 — Prometheus 가 /actuator/prometheus 로 지표를 수집해 간다
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
