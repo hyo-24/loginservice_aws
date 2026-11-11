@@ -41,19 +41,31 @@ Spring Security 없이 JWT + Interceptor로 인증/인가를 직접 구현하고
 ### 2차 — Terraform + EKS
 
 ```
-[GitHub Actions] ──빌드──▶ [Docker Hub]
-                                │  각 노드의 kubelet이 pull
-                                ▼
-                     [ALB]  ← Ingress 규칙으로 경로 분기
-                       │       /auth → auth, / → member, /internal → 403 차단
-                       │       target-type: ip (NodePort 없이 Pod에 직접 연결)
-                       ▼
-     [EKS 클러스터 — 노드 2대, us-east-1a / us-east-1b]
-       ├─ auth-service   Pod ×2 (:8080)
-       └─ member-service Pod ×2 (:8081)
-                       │
-                       ▼
-                 [RDS (MySQL)]
+■ 배포 흐름
+[GitHub main 브랜치에 push]
+        │
+        ▼
+[GitHub Actions]
+  ├─ auth-service, member-service Docker 이미지 빌드
+  └─ Docker Hub에 push
+        │
+        │  각 노드의 kubelet이 이미지를 pull
+        ▼
+[EKS 클러스터 — 노드 2대 (us-east-1a / us-east-1b)]
+  ├─ auth-service   Pod ×2 (:8080)
+  └─ member-service Pod ×2 (:8081)
+
+■ 요청 흐름
+[외부 요청]
+        │
+        ▼
+[ALB]  ← Ingress 규칙으로 경로 분기 / target-type: ip 로 Pod에 직접 연결
+  ├─ /auth      → auth-service Pod
+  ├─ /          → member-service Pod
+  └─ /internal  → 403 차단 (앱에 닿기 전 엣지에서)
+        │
+        ▼
+[RDS (MySQL)]  ← member-service 만 접근 (3306, 보안 그룹으로 제한)
 ```
 
 인프라는 Terraform으로 코드화해, VPC부터 클러스터·노드그룹·RDS·IAM까지 **22개 리소스를 한 번에 생성하고 한 번에 삭제**합니다.
