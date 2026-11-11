@@ -3,6 +3,10 @@ name: Deploy to EC2
 on:
   push:
     branches: [ main ]
+    # 문서만 고친 커밋에서는 이미지 빌드를 돌리지 않는다
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
 
 jobs:
   build-and-push:
@@ -33,6 +37,9 @@ jobs:
 
   deploy:
     needs: build-and-push
+    # EC2 인스턴스를 내린 상태라 기본적으로 실행하지 않는다(건너뜀 처리).
+    # 다시 띄우면 저장소 Settings > Variables 에 DEPLOY_TO_EC2=true 를 추가하면 그대로 동작한다.
+    if: vars.DEPLOY_TO_EC2 == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: EC2에 SSH로 접속해 배포 실행
