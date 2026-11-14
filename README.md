@@ -96,6 +96,10 @@ Spring Security 없이 JWT + Interceptor로 인증/인가를 직접 구현하고
 - 회원가입 시 BCrypt로 비밀번호 해싱
 - JWT secret key는 코드에 하드코딩하지 않고 환경변수로 외부화
 - 전역 예외 처리(`@ControllerAdvice`)로 일관된 에러 응답 제공
+- 인증 실패는 401, 권한 부족은 403으로 구분해 반환
+- **현재 한계** — 인가 규칙이 `ROLE_ADMIN` 하나로 고정돼 있어 경로별로 권한을 나눌 수 없습니다.
+  인가 동작을 확인하기 위한 학습용 구성이며, Spring Security로 옮기거나 경로별 권한 분기를
+  넣는 것이 다음 과제입니다.
 
 ### MSA 설계
 - 단일 서비스를 인증(auth-service)·회원(member-service)으로 분리
@@ -123,31 +127,59 @@ Spring Security 없이 JWT + Interceptor로 인증/인가를 직접 구현하고
 
 ## 트러블슈팅
 
-CI/CD 파이프라인 구축 과정에서 겪은 문제와 해결 과정은 아래 글에 자세히 정리했습니다.
+배포 과정에서 막혔던 지점과 해결 과정을 기록으로 남겨두었습니다.
 
-- [GitHub Actions로 CI/CD 파이프라인 만들기 — 트러블슈팅 기록](#) *(벨로그 링크 추가 예정)*
+- **EKS 배포 전 과정과 겪은 에러** — [eks-infra / EKS-deploy-log.md](https://github.com/hyo-24/eks-infra/blob/main/EKS-deploy-log.md)
+  kubeconfig 연결부터 정리까지 단계별 명령어와 그때 막혔던 지점, 이후 고친 내용을 날짜별로 남겨두었습니다.
+- GitHub Actions CI/CD 구축 과정은 벨로그에 정리 중입니다.
 
 ## 실행 방법
 
 ### 로컬 실행
-```bash
-# auth-service
-cd auth-service
-./gradlew bootJar
-docker build -t auth-service .
-docker run -d -p 8080:8080 -e DB_PASSWORD=<비밀번호> auth-service
 
-# member-service
-cd member-service
-./gradlew bootJar
-docker build -t member-service .
-docker run -d -p 8081:8081 -e DB_PASSWORD=<비밀번호> member-service
+`monitoring/docker-compose.yml`에 MySQL과 두 서비스가 함께 정의돼 있어, 한 번에 띄울 수 있습니다.
+(Prometheus·Grafana도 같이 올라옵니다.)
+
+```bash
+cd monitoring
+docker compose up -d
+docker compose ps          # 컨테이너 5개가 running 이면 정상
 ```
+
+| 주소 | |
+|---|---|
+| http://localhost:8081 | member-service |
+| http://localhost:8080 | auth-service |
+| http://localhost:9090 | Prometheus |
+| http://localhost:3000 | Grafana (admin / admin) |
+
+개별로 띄우려면 member-service만 DB가 필요합니다. auth-service는 DB를 쓰지 않고
+member-service를 HTTP로 호출해 자격을 검증합니다.
+
+```bash
+# member-service — DB 접속 정보 필요
+docker run -d -p 8081:8081 \
+  -e SPRING_DATASOURCE_URL=jdbc:mysql://<DB주소>:3306/logindockerdb \
+  -e DB_PASSWORD=<비밀번호> \
+  -e JWT_SECRET=<32자 이상> \
+  leehyoju24/member-service:latest
+
+# auth-service — DB 없음, member-service 주소와 JWT 키만 필요
+docker run -d -p 8080:8080 \
+  -e MEMBER_SERVICE_URL=http://<member-service 주소>:8081 \
+  -e JWT_SECRET=<32자 이상> \
+  leehyoju24/login-service:latest
+```
+
+두 서비스의 `JWT_SECRET`은 **같은 값이어야 합니다.** auth-service가 발급한 토큰을
+member-service가 검증하는데, HS256은 서명과 검증에 같은 키를 쓰기 때문입니다.
 
 ### 배포
 
 - **이미지 빌드** — `main` 브랜치에 push하면 GitHub Actions가 두 서비스의 이미지를 빌드해 Docker Hub에 push합니다. (`.github/workflows/deploy.yml` 참고)
-- **EC2 배포** — 같은 워크플로가 EC2에 SSH로 접속해 컨테이너를 재배포합니다.
+- **EC2 배포** — 같은 워크플로에 EC2 재배포 job이 있지만, 현재 EC2 인스턴스를 내린 상태라
+  저장소 변수 `DEPLOY_TO_EC2`가 설정돼 있을 때만 실행되도록 조건을 걸어 두었습니다.
+  job을 지우지 않은 것은 파이프라인 구성 자체를 기록으로 남기기 위해서입니다.
 - **EKS 배포** — 인프라는 `terraform apply`로 생성하고, 매니페스트 적용은 `kubectl`로 직접 수행합니다. 파이프라인에 포함하는 것은 남은 과제입니다.
 
 ## 앞으로의 계획
