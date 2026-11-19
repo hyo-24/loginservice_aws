@@ -84,6 +84,7 @@ Spring Security 없이 JWT + Interceptor로 인증/인가를 직접 구현하고
 | Backend | Java, Spring Boot, JPA (Hibernate) |
 | Database | MySQL (AWS RDS) |
 | Infra | AWS EC2, EKS, RDS, VPC, IAM, Secrets Manager, ALB |
+| WEB/WAS | Nginx (리버스 프록시), Tomcat (Spring Boot 내장) |
 | Container | Docker, Kubernetes (AWS EKS) |
 | CI/CD | GitHub Actions |
 | IaC | Terraform (S3 원격 state) |
@@ -138,20 +139,51 @@ Spring Security 없이 JWT + Interceptor로 인증/인가를 직접 구현하고
 ### 로컬 실행
 
 `monitoring/docker-compose.yml`에 MySQL과 두 서비스가 함께 정의돼 있어, 한 번에 띄울 수 있습니다.
-(Prometheus·Grafana도 같이 올라옵니다.)
+(Nginx·Prometheus·Grafana도 같이 올라옵니다.)
 
 ```bash
 cd monitoring
 docker compose up -d
-docker compose ps          # 컨테이너 5개가 running 이면 정상
+docker compose ps          # 컨테이너 6개가 running 이면 정상
 ```
 
 | 주소 | |
 |---|---|
-| http://localhost:8081 | member-service |
-| http://localhost:8080 | auth-service |
+| **http://localhost** | **Nginx — 경로에 따라 아래 두 서비스로 분기** |
+| http://localhost:8081 | member-service (프록시를 거치지 않고 직접) |
+| http://localhost:8080 | auth-service (프록시를 거치지 않고 직접) |
 | http://localhost:9090 | Prometheus |
 | http://localhost:3000 | Grafana (admin / admin) |
+
+#### Nginx 리버스 프록시 — ALB Ingress와 같은 라우팅을 직접 구성
+
+EKS에서는 ALB Ingress가 경로 라우팅을 맡았습니다. 관리형 서비스라 annotation 몇 줄이면
+AWS가 로드밸런서를 만들어주지만, 그 설정은 AWS 밖에서는 그대로 쓸 수 없습니다.
+
+같은 라우팅을 어느 환경에서나 동작하는 형태로 다뤄보기 위해, `monitoring/nginx.conf`에
+동일한 규칙을 직접 작성했습니다.
+
+| 경로 | 처리 | EKS에서는 |
+|---|---|---|
+| `/internal` | 403으로 차단 | ALB `actions.deny-internal` |
+| `/auth` | auth-service:8080 | ALB 규칙 |
+| `/` | member-service:8081 | ALB 기본 규칙 |
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost/                  # 200 — member-service
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost/internal/members/1 # 403 — 정문에서 차단
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost/auth/login         # 405 — auth-service 도달
+```
+
+구성하면서 알게 된 차이가 두 가지 있습니다.
+
+- **규칙 평가 방식** — ALB는 규칙을 작성 순서대로 평가하므로 포괄 규칙(`/`)을 마지막에 두어야
+  합니다. Nginx는 prefix location 중 가장 길게 일치하는 것을 고르므로 순서의 영향을 받지 않습니다.
+- **가용성의 책임** — ALB는 AWS가 여러 AZ에 분산해 운영하지만, Nginx는 직접 띄운 서버 위에 있어
+  그 자체가 단일 장애점이 됩니다. 실제 운영이라면 다중화나 앞단 로드밸런서가 따로 필요합니다.
+
+브라우저에서는 화면(`/`)과 로그인 요청(`/auth/login`)이 같은 출처로 보이기 때문에
+CORS 설정 없이 동작합니다.
 
 개별로 띄우려면 member-service만 DB가 필요합니다. auth-service는 DB를 쓰지 않고
 member-service를 HTTP로 호출해 자격을 검증합니다.

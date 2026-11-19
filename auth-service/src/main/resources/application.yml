@@ -11,7 +11,7 @@ jwt:
   expiration: 1800000
 
 member-service:
-  base-url: ${MEMBER_SERVICE_URL:http://3.214.246.197:8081}
+  base-url: ${MEMBER_SERVICE_URL:http://localhost:8081}
 
 # 모니터링 — Prometheus 가 /actuator/prometheus 로 지표를 수집해 간다
 management:

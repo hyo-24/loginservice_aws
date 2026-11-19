@@ -1,5 +1,5 @@
 # 로컬 모니터링 실습 환경
-#   MySQL + 두 서비스 + Prometheus + Grafana 를 한 번에 띄운다.
+#   MySQL + 두 서비스 + Nginx + Prometheus + Grafana 를 한 번에 띄운다.
 #   AWS 비용 없이 지표 수집과 대시보드 구성을 확인하기 위한 구성.
 #
 #   실행:  docker compose pull && docker compose up -d
@@ -28,6 +28,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/logindockerdb
+      DB_USERNAME: admin
       DB_PASSWORD: localtest1234
       JWT_SECRET: local-dev-secret-key-change-me-please-32bytes
     ports:
@@ -43,6 +44,18 @@ services:
       JWT_SECRET: local-dev-secret-key-change-me-please-32bytes
     ports:
       - "8080:8080"
+
+  # 리버스 프록시 — EKS에서 ALB Ingress가 하던 경로 라우팅을 로컬에서 재현
+  #   브라우저는 80 포트 하나만 보고, 경로에 따라 뒤쪽 서비스로 나뉘어 간다
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - member-service
+      - auth-service
+    ports:
+      - "80:80"
 
   prometheus:
     image: prom/prometheus:v2.53.0

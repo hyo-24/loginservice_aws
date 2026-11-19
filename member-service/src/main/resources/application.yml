@@ -2,8 +2,9 @@ spring:
   application:
     name: member-service
   datasource:
-    url: jdbc:mysql://database-docker.c6lgkimcmm92.us-east-1.rds.amazonaws.com:3306/logindockerdb
-    username: admin
+    # 실제 접속 정보는 배포 환경에서 환경변수로 주입한다 (k8s: member.yaml / 로컬: docker-compose.yml)
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/logindockerdb}
+    username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD}
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
